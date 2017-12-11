@@ -156,7 +156,7 @@ public class Server implements Runnable {
 //***************Client Want to know the highScore***************  
                     case 3:
                         System.out.println("Client want to know the rangking..");
-                        System.out.println("Try : " + tryCount+"random Num + "+randomGenNum +"Level : "+level);
+                        System.out.println("Try : " + tryCount+"random Number : "+randomGenNum +"Level : "+level);
                         
                         int highScore = (level * randomGenNum / tryCount);
                         serverResponse[1] = 0;
