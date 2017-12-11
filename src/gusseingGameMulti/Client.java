@@ -10,8 +10,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.math.BigInteger;
 import java.net.Socket;
+import java.nio.charset.Charset;
 
 /**
  *
@@ -21,10 +21,10 @@ public class Client {
 
     public static void main(String[] args) {
         String address = "127.0.0.1";
-        int port = 59313;
+        int port = 6060;
         byteHandle bh = new byteHandle();
         byte[] message = new byte[4],
-                response = new byte[3];
+                response = new byte[4];
 
         try {
             System.out.println("Connecting to " + address + " on port " + port);
@@ -44,66 +44,117 @@ public class Client {
                 ClientInput = br.readLine();
                 if (ClientInput.equalsIgnoreCase("bye")) {
                     ClientInput = "4";
-                } else {
+                }  
                     int inpNum = Integer.parseInt(ClientInput);
                     message[0] = (byte) inpNum;
-                }
-
+                
+                //System.out.println("Client input value : "+ClientInput+"\n");
                 switch (ClientInput) {
                     case "1":
-                        System.out.println("Please enter the difficulty level");
-                        int level;
-                        level = br.read();
-                        byte[] TempNumber = bh.toByteArray(level);
+                        System.out.println("Please enter the difficulty level (1 to 3)");
+                        System.out.println("\n if you chooose Level-1 : You have to guess num 1 - 20\n if you chooose Level-2 : You have to guess num 1 - 200\n if you chooose Level-3 : You have to guess num 1 - 2000");
+                        String inputLevel;
+                        inputLevel = br.readLine();
+                        int level = Integer.parseInt(inputLevel);
                         message[1] = 0;
-                        message[2] = TempNumber[0];
-                        message[3] = TempNumber[1];
-                        outStream.write(message, 0, 4);
-                        //socketOutStream.write(message, 0, 4);
-                        break;
-                    case "2":
-                        System.out.println("Guess the Number : ");
-                        int gusNum = br.read();
-                        byte[] TempNumber2 = bh.toByteArray(gusNum);
-                        message[0] = 2;
-                        message[1] = 0;
-                        message[2] = TempNumber2[0];
-                        message[3] = TempNumber2[1];
+                        message[2] = 0;
+                        message[3] = (byte) level;
                         outStream.write(message, 0, 4);
                         inStream.read(response, 0, 3);
 
+                        System.out.println("Message array : " + "{0} " + message[0] + " {1} " + message[1] + " {2} " + message[2] + " {3} " + message[3]);
+
+                        System.out.println("Response : " + "{0} " + response[0] + " {1} " + response[1] + " {2} " + response[2]);
+                        //if client want to start a game without finishing the running one..
+                        Byte b = new Byte(response[2]);
+                        int lastNumOfResponse = b.intValue();
+                        if (lastNumOfResponse == 1) {
+                            System.out.println("You are already in Game.!!\nPlease finish the runing one first.");
+                        }
+                        break;
+                    case "2":
+                        System.out.println("Guess the Number : ");
+                        String gusInput = br.readLine();
+                        byte[] GusInput = gusInput.getBytes();
+
+                        message[1] = 0;
+                        message[2] = (byte) GusInput.length;
+                        outStream.write(message, 0, 3);
+                        //Sending the user's guess number to server.... :)
+                        outStream.write(GusInput);
+//                        for(int i =0;i<3;i++)
+//                        System.out.println("GusInput from user : "+GusInput[i]);
+
+                        inStream.read(response, 0, 3);
+                        System.out.println("{0} " + response[0] + " {1} " + response[1] + " {2} " + response[2]);
                         switch (response[2]) {
                             case 0:
-                                System.out.println("your guess is too low! try again.");
+                                System.out.println("your guess is too big! try again.");
+
                                 break;
                             case 1:
-                                System.out.println("your guess is too big! try again.");
+                                System.out.println("your guess is too low! try again.");
                                 break;
                             case 2:
                                 System.out.println("Perfect! \nWhat is your name? \nName : ");
                                 //String [] tempStr = new String[4];
                                 name = br.readLine();
-                                String str = String.join(";", "2", "1", name);
-                                ClientInput = str;
-                                outStream.writeUTF(ClientInput);
-                                outStream.flush();
+                                //String str = String.join(";", "2", "1", name);
+                                byte[] NameByte = name.getBytes();
+                                message[1] = 1;
+                                message[2] = (byte) NameByte.length;
 
+                                outStream.write(message, 0, 3);
+                                outStream.write(NameByte);
+
+                                inStream.read(response, 0, 3);
+                                System.out.println("{0} " + response[0] + " {1} " + response[1] + " {2} " + response[2]);
+                                Byte bNameRes = new Byte(response[1]);
+                                int afterGetName = bNameRes.intValue();
+                                if (afterGetName == 1) {
+                                    System.out.println(" Server Say's: Thanks!\n ");
+                                }
+                                outStream.flush();
+                                break;
+                            //need to figure out why 255 is not working.!!        
+                            case 127:
+                                System.out.println("Sorry!! you didn't start the game.!\n");
                                 break;
                         }
                         break;
 
                     case "3":
-                        System.out.println("No highScore generated!\n");
+                        message[1] = 0;
+                        message[2] = 0;
+                        outStream.write(message, 0, 3);
+                        inStream.read(response, 0, 3);
+                        System.out.println("{0} " + response[0] + " {1} " + response[1] + " {2} " + response[2]);
+                        Byte bHighSc = new Byte(response[2]);
+                        int HighScore = bHighSc.intValue();
+                        if(HighScore == 0)
+                        {
+                          System.out.println("No highScore generated!\n");
+                        }
+                        else{
+                            System.out.println("your score is : "+HighScore +" Bravo!!\n");
+                        }
+                        
                         break;
                     case "4":
-                        ClientInput = "bye";
-                        outStream.writeUTF(ClientInput);
+                        message[1] = 1;
+                        message[2] = 0;
+                        System.out.println("Message array : " + "{0} " + message[0] + " {1} " + message[1] + " {2} " + message[2]);
+                        outStream.write(message, 0, 3);
                         outStream.flush();
-                        String serverMessage = inStream.readUTF();
-                        System.out.println(" Server Say's: " + serverMessage);
-                        outStream.close();
-                        socket.close();
-                        loop=false;
+                        inStream.read(response, 0, 3);
+                        System.out.println("{0} " + response[0] + " {1} " + response[1] + " {2} " + response[2]);
+                        if (response[2] == 1) {
+                            System.out.println(" Server Say's: GoodBye!\n ");
+                            outStream.close();
+                            socket.close();
+                            loop = false;
+                        }
+                   
 
                 }
             }
