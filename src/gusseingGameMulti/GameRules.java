@@ -9,41 +9,37 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.Random;
 
-public class Server implements Runnable {
+public class GameRules implements Runnable {
 
-    int PortNum;
+    Socket serverClient;
+    int clientNo;
     byte[] clientRspPart1 = new byte[2];
     byte[] clientRspPart2 = new byte[2];
     byte[] GuessNumberRead;
     byte[] serverResponse = new byte[4];
     byteHandle bh = new byteHandle();
 
-    public Server(int port) {
-        this.PortNum = port;
+    public GameRules(Socket inSocket, int counter) {
+        this.serverClient = inSocket;
+        this.clientNo = counter;
+        System.out.println("Gettind data : " + serverClient.toString() + "Client number : " + clientNo);
     }
 
     @Override
     public void run() {
         try {
             Random random = new Random();
-            ServerSocket server = new ServerSocket(PortNum);
-            System.out.println("Waiting for client on port " + server.getLocalPort() + "...");
-            Socket serverClient = server.accept();
-            System.out.println("Just connected to " + serverClient.getRemoteSocketAddress());
 
             DataInputStream inStream = new DataInputStream(serverClient.getInputStream());
             DataOutputStream outStream = new DataOutputStream(serverClient.getOutputStream());
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             boolean loop = true, started = false;
-            int randomGenNum = 0, tryCount = 0,level=0;
+            int randomGenNum = 0, tryCount = 0, level = 0;
             while (loop) {
-               
+
                 inStream.read(clientRspPart1, 0, 2);
                 //byte temp = clientResponse[0];
                 Byte b = new Byte(clientRspPart1[0]);
@@ -142,7 +138,7 @@ public class Server implements Runnable {
                                 serverResponse[2] = 0;
                                 outStream.write(serverResponse, 0, 3);
                                 outStream.flush();
-                                started=false;
+                                started = false;
                             }
 
                         } else {
@@ -156,12 +152,12 @@ public class Server implements Runnable {
 //***************Client Want to know the highScore***************  
                     case 3:
                         System.out.println("Client want to know the rangking..");
-                        System.out.println("Try : " + tryCount+"random Number : "+randomGenNum +"Level : "+level);
-                        
-                        int highScore = (level * randomGenNum / tryCount);
+                        System.out.println("Try : " + tryCount + "random Number : " + randomGenNum + "Level : " + level);
+
+                        int highScore = (level * (randomGenNum / 10) / tryCount);
                         serverResponse[1] = 0;
                         serverResponse[2] = (byte) highScore;
-                        
+
                         if (tryCount == 0) {
                             serverResponse[1] = 0;
                             serverResponse[2] = 0;
@@ -173,8 +169,9 @@ public class Server implements Runnable {
                     case 4:
                         Byte by = new Byte(clientRspPart1[1]);
                         int SecondValueOfRes = by.intValue();
-                        if(SecondValueOfRes == 1)
-                        System.out.println("Client Say's : Bye");
+                        if (SecondValueOfRes == 1) {
+                            System.out.println("Client Say's : Bye");
+                        }
                         serverResponse[1] = 0;
                         serverResponse[2] = 1;
                         outStream.write(serverResponse, 0, 3);
@@ -187,23 +184,31 @@ public class Server implements Runnable {
 //                        outStream.write(serverResponse, 0, 3);
 //                        outStream.flush();
 //                        loop = false;
-                        
+
                 }
 
             }
+            
+                inStream.close();
+                outStream.close();
+                serverClient.close();
+            
+            //here I will add close connection things..
 
         } catch (Exception e) {
             System.err.println("Erro in server : " + e);
+        } finally {
+            System.out.println("Client =" + clientNo + " exit!! ");
+            clientNo--;
         }
 
     }
 
-    public static void main(String[] args) {
-        int portnum = 6060;
-        Thread t1 = new Thread(new Server(portnum));
-        t1.start();
-    }
-
+//    public static void main(String[] args) {
+//        int portnum = 6060;
+//        Thread t1 = new Thread(new GameRules(portnum));
+//        t1.start();
+//    }
     public static boolean isInteger(String input) {
         try {
             Integer.parseInt(input);

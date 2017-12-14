@@ -9,9 +9,8 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.charset.Charset;
+
 
 /**
  *
@@ -21,7 +20,7 @@ public class Client {
 
     public static void main(String[] args) {
         String address = "127.0.0.1";
-        int port = 6060;
+        int port = 9999;
         byteHandle bh = new byteHandle();
         byte[] message = new byte[4],
                 response = new byte[4];
